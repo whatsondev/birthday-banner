@@ -2,9 +2,7 @@
 
 /**
  * ajax -> posts -> story
- * 
- * @package Sngine
- * @author Zamblek
+
  */
 
 // fetch bootstrap
@@ -16,19 +14,19 @@ is_ajax();
 // user access
 user_access(true);
 
-
+// check demo account
+if ($user->_data['user_demo']) {
+  modal("ERROR", __("Demo Restriction"), __("You can't do this with demo account"));
+}
 try {
 
   // initialize the return array
     $return = array();
     // $bd = $GET['id'];
-    $gifts= $user->get_gifts();
-    $smarty->assign('gifts', $gifts);
+    $bdd= $user->birthdays();
+    $smarty->assign('bdd', $bdd);
 
-    
-    $uid= $_GET['id'];
-    $smarty->assign('uid', $uid);
-    $return['interest_publisher'] = $smarty->fetch("ajax.send.gift.tpl");
+    $return['interest_publisher'] = $smarty->fetch("ajax.birthday.wish.tpl");
     $return['callback'] = "$('#modal').modal('show'); $('.modal:last').html(response.interest_publisher);";
        
   // return & exit

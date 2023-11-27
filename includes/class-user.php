@@ -1,130 +1,110 @@
 <?php
 
  /**
-   * get_gifts
+   * Birthday Banner
    * 
    * @return array
    */
-  public function get_gifts()
-  {
+  public function birthdays(){
     global $db;
-    $gifts = [];
-    $get_gifts = $db->query("SELECT * FROM gifts") or _error("SQL_ERROR_THROWEN");
-    if ($get_gifts->num_rows > 0) {
-      while ($gift = $get_gifts->fetch_assoc()) {
-        $gifts[] = $gift;
-      }
+  
+    $picture=[];
+    global $gender;
+    $url=[];
+    $name=[];
+    $notification=[];
+    $friends = [];
+    global $date;
+    $bd = $db->query("SELECT * from users where user_privacy_birthdate != 'me' and DAY(user_birthdate) = DAY(CURDATE()) and MONTH(user_birthdate) = MONTH(CURDATE())") or _error("SQL_ERROR_THROWEN");
+    if ($bd->num_rows == 0) {
+      return false;
     }
-    return $gifts;
-  }
-
-
-  /**
-   * get_gift
-   * 
-   * @return array
-   */
-  public function get_gift($gift_id)
-  {
-    global $db;
-    $get_gift = $db->query(sprintf("SELECT gifts.image, users.user_name, users.user_firstname, users.user_lastname FROM users_gifts INNER JOIN gifts ON users_gifts.gift_id = gifts.gift_id INNER JOIN users ON users_gifts.from_user_id = users.user_id WHERE users_gifts.id = %s AND users_gifts.to_user_id = %s", secure($gift_id, 'int'), secure($this->_data['user_id'], 'int'))) or _error("SQL_ERROR_THROWEN");
-    if ($get_gift->num_rows == 0) {
-      return $false;
-    }
-    return $get_gift->fetch_assoc();
-  }
-
-  public function get_my_gift($user){
-   
-    global $db;
-    $gifts = [];
-    $get_gifts = $db->query(sprintf("SELECT gifts.gift_id,gifts.image,gifts.name from (SELECT gift_id FROM `users_gifts` WHERE to_user_id=%s group by gift_id ) as t JOIN gifts where t.gift_id=gifts.gift_id",secure($user,'int'))) or _error("SQL_ERROR_THROWEN");
-    if ($get_gifts->num_rows > 0) {
-      while ($gift = $get_gifts->fetch_assoc()) {
-       
-        $gift_id= $gift['gift_id'];
-        $gift['image']=get_picture($gift['image'],1);
-        $gift_users=$db->query(sprintf("SELECT * from users JOIN (SELECT from_user_id FROM `users_gifts` WHERE gift_id=%s and to_user_id=%s)as t where users.user_id= t.from_user_id",secure($gift_id,'int'),secure($user,'int'))) or _error("SQL_ERROR_THROWEN");
-        if ($gift_users->num_rows > 0) {
-          $ii=0;
-          while ($g = $gift_users->fetch_assoc()) {
-            $ii++;
-            $g['user_picture']=get_picture($g['user_picture'],1);
-            $gift['users'][]=$g;
-            if($ii<4){
-              $gift['im_users'][]=$g;
-            }
-          }
-        }
-       
-        $gift['count']=$ii;
-        $gift['user_id']= $user;
-        $gifts[] = $gift;
-        
-      }
+    $i=0;
+    if ($bd->num_rows > 0) {
+      while ($video = $bd->fetch_assoc()) {
+        $i++;
       
-    return $gifts;
+       
+        $message = $video['user_name']." happy birthday! ";
+        $picture= $video['user_picture'];
+        $gender= $video['user_gender'];
+        $email= $video['user_email'];
+        $date = date("l jS \of F Y ");
+        $url[$i]=$video['user_name'];
+        $urll = $video['user_name'];
+        $name[$i] = $video['user_firstname']." ".$video['user_lastname'];
+        if($picture != null){
+                  $picture = "https://whatson.plus/content/uploads/".$picture[$i];
+                  $video['user_picture']=$video['user_picture'];
+                }
+                else{
+                  if($gender== 1){
+                    $picture = 'https://whatson.plus/content/uploads/photos/2021/04/sngine_33ac77a5727c7ca79b07c23f8df291db.png';
+                    $video['user_picture']='photos/2021/04/sngine_33ac77a5727c7ca79b07c23f8df291db.png';
+                  }
+                  else 
+                  $picture= 'https://whatson.plus/content/uploads/photos/2021/04/sngine_33ac77a5727c7ca79b07c23f8df291db.png';
+                  $video['user_picture']='photos/2021/04/sngine_33ac77a5727c7ca79b07c23f8df291db.png';
+        
+                } 
+                $videos[] = $video;
+      }
+
+
+    return $videos;
+
   }
 }
+public function post_birthdays($user_id){
+  global $db,$date;
+  $text = "Happy Birthday..!";
+ 
+$db->query(sprintf("INSERT INTO posts (user_id, user_type, in_wall,wall_id ,post_type,privacy,text, time) VALUES (%s, 'user','1',%s,'wish','public',%s , %s)", secure($this->_data['user_id'], 'int'),secure($user_id, 'int'),secure($text),secure($date))) or _error("SQL_ERROR_THROWEN");
+$post_id = $db->insert_id;
 
-public function who_gifts($gift_id, $user){
-  // echo $user_id;
-  global $db;
-  $gifts = [];
-  $gift_users=$db->query(sprintf("SELECT * from users JOIN (SELECT from_user_id FROM `users_gifts` WHERE gift_id=%s and to_user_id=%s)as t where users.user_id= t.from_user_id",secure($gift_id,'int'),secure($user,'int'))) or _error("SQL_ERROR_THROWEN");
-  if ($gift_users->num_rows > 0) {
-   
-    while ($g = $gift_users->fetch_assoc()) {
-      $g['user_picture']=get_picture($g['user_picture'],1);
-      $gifts[] = $g;
-    }
-  }
-  return $gifts;
+$this->post_notification(array('to_user_id' => $user_id, 'action' => 'wall', 'node_type' => 'post', 'node_url' => $post_id ,'date'=>$date));
+
 }
 
-  public function get_id_info(){
-    global $db;
-    // echo $username;
-    $gifts = [];
-    $get_gift = $db->query(sprintf("SELECT * FROM `users` where user_registered > now() - INTERVAL 5 day ORDER BY user_id DESC LIMIT 10")) or _error("SQL_ERROR_THROWEN");
-    if ($get_gift->num_rows == 0) {
-      return $false;
+public function post_conversation_message_wish($message, $image, $voice_note, $conversation_id = null, $recipients = null)
+{
+  global $db, $system, $date;
+
+  $hashtags = [];
+  $con_id=null;
+  
+  $get_id = $db->query(sprintf(" SELECT conversation_id,user_id from conversations_users where conversation_id in (SELECT conversation_id FROM `conversations_users` WHERE user_id=%s) and user_id=%s", secure($this->_data['user_id'], 'int'), secure($recipients, 'int'))) or _error("SQL_ERROR_THROWEN");
+  if ($get_id->num_rows > 0) {
+    while ($conid = $get_id->fetch_assoc()) {
+      $conversation_id = $conid['conversation_id'];
     }
-    if ($get_gift->num_rows > 0) {
-      while ($gift = $get_gift->fetch_assoc()) {
-        $gift['user_picture'] = get_picture($gift['user_picture'], $gift['user_gender']);
-        $gift['mutual_friends_count'] = $this->get_mutual_friends_count($gift['user_id']);
-        $gifts[] = $gift;
-      }
-      }
-    
-    return $gifts;
+  }
+  else{
+    $db->query("INSERT INTO conversations (last_message_id) VALUES ('0')") or _error("SQL_ERROR_THROWEN");
+    $conversation_id = $db->insert_id;
+    /* insert the sender (viewer) */
+    $db->query(sprintf("INSERT INTO conversations_users (conversation_id, user_id, seen) VALUES (%s, %s, '1')", secure($conversation_id, 'int'), secure($this->_data['user_id'], 'int'))) or _error("SQL_ERROR_THROWEN");
+    /* insert recipients */
+    $db->query(sprintf("INSERT INTO conversations_users (conversation_id, user_id) VALUES (%s, %s)", secure($conversation_id, 'int'), secure($recipients, 'int'))) or _error("SQL_ERROR_THROWEN");
+    $con_id=$conversation_id;
   }
 
-  /**
-   * send_gift
-   *
-   * @param integer $user_id
-   * @param integer $gift_id
-   * 
-   * @return void
-   */
-  public function send_gift($user_id, $gift_id)
-  {
-    global $db, $system;
-    /* check if the viewer allowed to send a gift to the target */
-    $get_target_user = $db->query(sprintf("SELECT user_privacy_gifts FROM users WHERE user_id = %s", secure($user_id, 'int'))) or _error("SQL_ERROR_THROWEN");
-    if ($get_target_user->num_rows == 0) {
-      _error(400);
-    }
-    $target_user = $get_target_user->fetch_assoc();
-    if ($target_user['user_privacy_gifts'] == "me" || ($target_user['user_privacy_gifts'] == "friends" && !$this->friendship_approved($user_id))) {
-      throw new Exception(__("You can't send a gift to this user"));
-    }
-    /* send the gift to the target user */
-    $db->query(sprintf("INSERT INTO users_gifts (from_user_id, to_user_id, gift_id) VALUES (%s, %s, %s)", secure($this->_data['user_id'], 'int'),  secure($user_id, 'int'), secure($gift_id, 'int'))) or _error("SQL_ERROR_THROWEN");
-    /* post new notification */
-    $this->post_notification(array('to_user_id' => $user_id, 'action' => 'gift', 'node_url' => $db->insert_id));
-  }
+  $db->query(sprintf("INSERT INTO conversations_messages (conversation_id, user_id, message, image, voice_note, time) VALUES (%s, %s, %s, %s, %s, %s)", secure($conversation_id, 'int'), secure($this->_data['user_id'], 'int'), secure($message), secure($image), secure($voice_note), secure($date))) or _error("SQL_ERROR_THROWEN");
+  $message_id = $db->insert_id;
+  $db->query(sprintf("UPDATE conversations SET last_message_id = %s WHERE conversation_id = %s", secure($message_id, 'int'), secure($conversation_id, 'int'))) or _error("SQL_ERROR_THROWEN");
+  /* update sender (viewer) with last message id */
+  $db->query(sprintf("UPDATE users SET user_live_messages_lastid = %s WHERE user_id = %s", secure($message_id, 'int'), secure($this->_data['user_id'], 'int'))) or _error("SQL_ERROR_THROWEN");
+  /* get conversation */
+  $conversation = $this->get_conversation($conversation_id);
+  /* update all recipients with last message id & only offline recipient messages counter */
+  $db->query(sprintf("UPDATE users SET user_live_messages_lastid = %s, user_live_messages_counter = user_live_messages_counter + 1 WHERE user_id = %s", secure($message_id, 'int'), secure($recipients, 'int'))) or _error("SQL_ERROR_THROWEN");
+  /* update typing status of the viewer for this conversation */
+  $is_typing = '0';
+  $db->query(sprintf("UPDATE conversations_users SET typing = %s WHERE conversation_id = %s AND user_id = %s", secure($is_typing), secure($conversation_id, 'int'), secure($this->_data['user_id'], 'int'))) or _error("SQL_ERROR_THROWEN");
+  
+
+  return 0;
+}
+
 
 ?>
