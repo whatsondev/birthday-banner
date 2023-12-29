@@ -5,6 +5,7 @@
    * 
    * @return array
    */
+ /* birthday count to json */
   public function birthdays(){
     global $db;
   
@@ -49,12 +50,12 @@
                 } 
                 $videos[] = $video;
       }
-
-
     return $videos;
 
   }
 }
+
+ /* birthday post to wall */
 public function post_birthdays($user_id){
   global $db,$date;
   $text = "Happy Birthday..!";
@@ -65,7 +66,7 @@ $post_id = $db->insert_id;
 $this->post_notification(array('to_user_id' => $user_id, 'action' => 'wall', 'node_type' => 'post', 'node_url' => $post_id ,'date'=>$date));
 
 }
-
+ /* birthday message to the birthday boy/girl */
 public function post_conversation_message_wish($message, $image, $voice_note, $conversation_id = null, $recipients = null)
 {
   global $db, $system, $date;
