@@ -2,7 +2,7 @@
     <div class="data-container {if $_small}small{/if}">
       <a class="data-avatar" href="{$system['system_url']}/{$_user['user_name']}{if $_search}?ref=qs{/if}">
         
-        <img src="{$_user['user_picture']}" alt="">
+        <img src="{$_user['user_picture']}" alt="user">
         {if $_reaction}
           <div class="data-reaction">
             <div class="inline-emoji no_animation">
